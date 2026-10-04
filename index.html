@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CAT 2026 tracker and plan</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+:root{
+  --bg:#F2F4F8; --surface:#FFFFFF; --ink:#14203B; --muted:#5A6579; --line:#D3D9E4;
+  --accent:#2A55D9; --done:#1C8559; --fill:#A8DBC0; --mock:#E6EDFF; --mock-line:#8EA8F0;
+  --light:#E8F5EC; --light-line:#8CC9A7; --today:#E8A800; --warn:#C2410C; --on-done:#FFFFFF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1424; --surface:#151D31; --ink:#E7EBF4; --muted:#98A4BC; --line:#28334D;
+    --accent:#86A0FF; --done:#46C28A; --fill:#1F6B4C; --mock:#18264A; --mock-line:#3A55A0;
+    --light:#12302A; --light-line:#2F6B55; --today:#F2B705; --warn:#F0A06A; --on-done:#08140E;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1424; --surface:#151D31; --ink:#E7EBF4; --muted:#98A4BC; --line:#28334D;
+  --accent:#86A0FF; --done:#46C28A; --fill:#1F6B4C; --mock:#18264A; --mock-line:#3A55A0;
+  --light:#12302A; --light-line:#2F6B55; --today:#F2B705; --warn:#F0A06A; --on-done:#08140E;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+*,*::before,*::after{box-sizing:border-box;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.45 "Avenir Next","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:680px; margin:0 auto; padding:20px 16px 48px;}
+h1,h2,.num{font-family:"Bricolage Grotesque","Avenir Next","Trebuchet MS",system-ui,sans-serif;}
+h1{font-size:30px; line-height:1.1; margin:0 0 4px; font-weight:800; letter-spacing:-0.01em;}
+h2{font-size:20px; line-height:1.2; margin:0; font-weight:800;}
+p{margin:0;}
+.sub{color:var(--muted);}
+button{font:inherit; color:inherit; cursor:pointer;}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+/* header */
+.top{display:grid; grid-template-columns:1fr auto; gap:12px 16px; align-items:center; margin-bottom:14px;}
+.pbox{
+  display:inline-flex; align-items:baseline; justify-content:center; gap:2px;
+  min-width:72px; padding:6px 10px; border:2px solid var(--ink); border-radius:6px;
+  background:var(--surface); line-height:1;
+}
+.pbox b{font-family:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif; font-size:30px; font-weight:800;}
+.pbox i{font-style:normal; font-size:14px; color:var(--muted); font-weight:600;}
+.pbox.big{min-width:92px; padding:8px 12px;}
+.pbox.big b{font-size:40px;}
+.stats{grid-column:1/-1; display:flex; flex-wrap:wrap; gap:4px 18px; color:var(--muted); font-size:14px;}
+.stats strong{color:var(--ink);}
+.carry{grid-column:1/-1; font-size:14px;}
+.carry.warn{color:var(--warn); font-weight:600;}
+
+/* calendar */
+.cal{margin:6px 0 22px;}
+.cal-grid{display:grid; grid-template-columns:30px repeat(7,1fr) 40px; gap:4px; align-items:stretch;}
+.dow{font-size:12px; color:var(--muted); text-align:center; padding-bottom:2px;}
+.wk{
+  border:0; background:none; font-size:12px; font-weight:700; color:var(--muted); text-align:left; padding:0;
+}
+.wk.sel{color:var(--accent);}
+.wkpct{font-size:12px; color:var(--muted); text-align:right; align-self:center;}
+.cell{
+  position:relative; height:40px; padding:0; border:1px solid var(--line); border-radius:4px;
+  background:linear-gradient(to top,var(--fill) calc(var(--p,0)*100%),var(--surface) 0);
+  font-size:13px; font-weight:600; color:var(--ink);
+}
+.cell.full{background:var(--done); border-color:var(--done); color:var(--on-done);}
+.cell.open{box-shadow:inset 0 -3px 0 var(--warn);}
+.cell.today{outline:2px solid var(--today); outline-offset:1px;}
+.cell.mock::before{content:""; position:absolute; top:3px; right:3px; width:7px; height:7px; background:var(--accent); border-radius:1px;}
+.cell.full.mock::before{background:var(--on-done);}
+.cell.light::before{content:""; position:absolute; top:3px; right:3px; width:7px; height:7px; border:2px solid var(--done); border-radius:50%;}
+.cell.full.light::before{border-color:var(--on-done);}
+.cell.exam{background:var(--ink); color:var(--surface); border-color:var(--ink);}
+.cell.future{color:var(--muted);}
+.legend{margin-top:8px; font-size:13px; color:var(--muted);}
+.legend span{display:inline-block; margin-right:12px;}
+.dot-m{display:inline-block; width:8px; height:8px; background:var(--accent); border-radius:1px; margin-right:4px;}
+.dot-l{display:inline-block; width:8px; height:8px; border:2px solid var(--done); border-radius:50%; margin-right:4px; vertical-align:-1px;}
+
+/* week bar */
+.weekbar{display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; margin:0 0 12px;}
+.weekbar .mid{display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0;}
+.weekbar .mid p{font-size:13px; color:var(--muted);}
+.nav{
+  border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:8px 12px; min-height:40px; font-size:14px; font-weight:600;
+}
+.nav[disabled]{opacity:.4; cursor:default;}
+.jump{margin:0 0 12px; border:1px solid var(--accent); background:transparent; color:var(--accent); border-radius:6px; padding:8px 12px; font-size:14px; font-weight:600;}
+
+/* day */
+.day{
+  background:var(--surface); border:1px solid var(--line); border-left:5px solid var(--line);
+  border-radius:6px; margin:0 0 12px; overflow:hidden;
+}
+.day.mock{background:var(--mock); border-left-color:var(--mock-line);}
+.day.light{background:var(--light); border-left-color:var(--light-line);}
+.day.today{border-left-color:var(--today);}
+.day.full{border-left-color:var(--done);}
+.day-h{display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:center; padding:12px 12px 10px;}
+.when strong{font-family:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif; font-size:19px; font-weight:800; margin-right:8px;}
+.when span{color:var(--muted); font-size:14px; margin-right:8px;}
+.tags{grid-column:1/2; display:flex; flex-wrap:wrap; gap:6px;}
+.tag{font-size:12px; font-weight:700; padding:2px 8px; border-radius:20px; border:1px solid var(--line); background:var(--surface); color:var(--muted);}
+.tag.now{background:var(--today); border-color:var(--today); color:#1a1300;}
+.tag.mk{border-color:var(--mock-line); color:var(--accent);}
+.tag.lt{border-color:var(--light-line); color:var(--done);}
+.day-h .pbox{grid-row:1/3; grid-column:2;}
+.bar{height:4px; background:var(--line);}
+.bar i{display:block; height:100%; width:0; background:var(--done);}
+.tasks{list-style:none; margin:0; padding:0;}
+.task{
+  display:grid; grid-template-columns:24px 56px 1fr; gap:10px; align-items:start; width:100%;
+  text-align:left; background:transparent; border:0; border-top:1px solid var(--line);
+  padding:12px 12px; min-height:48px;
+}
+.box{width:22px; height:22px; border:2px solid var(--muted); border-radius:4px; background:var(--surface); position:relative; margin-top:1px;}
+.who{font-size:13px; font-weight:700; color:var(--muted); padding-top:2px;}
+.what{overflow-wrap:anywhere;}
+.task[aria-checked="true"] .box{background:var(--done); border-color:var(--done);}
+.task[aria-checked="true"] .box::after{
+  content:""; position:absolute; left:6px; top:1px; width:6px; height:12px;
+  border:solid var(--on-done); border-width:0 2.5px 2.5px 0; transform:rotate(45deg);
+}
+.task[aria-checked="true"] .what{color:var(--muted); text-decoration:line-through; text-decoration-thickness:1px;}
+.mockin{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:12px; border-top:1px solid var(--line); font-size:14px;}
+.mockin label{display:flex; align-items:center; gap:8px; color:var(--muted);}
+.mockin input{
+  width:84px; padding:8px; border:1px solid var(--line); border-radius:4px; background:var(--surface);
+  color:var(--ink); font:inherit; text-align:right;
+}
+.mockin small{flex-basis:100%; color:var(--muted);}
+.exam-note{padding:4px 12px 14px;}
+
+/* mocks */
+.mocks{margin-top:26px;}
+.mocks h2{margin-bottom:6px;}
+.spark{width:100%; height:auto; display:block; margin-top:8px;}
+.spark text{font-size:10px; fill:var(--muted);}
+.empty{color:var(--muted); font-size:14px; margin-top:6px;}
+
+footer{margin-top:30px; font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;}
+.reset{border:1px solid var(--line); background:transparent; border-radius:6px; padding:6px 10px; font-size:13px; color:var(--muted);}
+.reset.arm{border-color:var(--warn); color:var(--warn); font-weight:700;}
+@media (prefers-reduced-motion:no-preference){
+  .box{transition:background .12s,border-color .12s;}
+  .bar i{transition:width .2s;}
+}
+@media (min-width:520px){
+  .cell{height:46px; font-size:14px;}
+  h1{font-size:36px;}
+}
+
+.tabs{display:flex; gap:8px; margin:0 0 18px;}
+.tab{flex:1; border:2px solid var(--ink); background:transparent; border-radius:6px; padding:10px 12px; font-weight:700; min-height:44px; color:var(--ink);}
+.tab[aria-selected="true"]{background:var(--ink); color:var(--bg);}
+.plan h1{margin-bottom:6px;}
+.plan .intro{margin:0 0 14px;}
+.plan details{border:1px solid var(--line); background:var(--surface); border-radius:6px; margin:0 0 10px;}
+.plan summary{cursor:pointer; padding:14px; font-family:"Bricolage Grotesque","Avenir Next","Trebuchet MS",system-ui,sans-serif; font-weight:800; font-size:18px; list-style:none; display:flex; justify-content:space-between; gap:12px;}
+.plan summary::-webkit-details-marker{display:none;}
+.plan summary::after{content:"+"; color:var(--muted); font-weight:600;}
+.plan details[open] summary::after{content:"\2212";}
+.plan .pb{padding:0 14px 6px;}
+.plan .pb p{margin:0 0 10px;}
+.plan .pb ul{margin:0 0 12px; padding-left:20px;}
+.plan .pb li{margin:0 0 6px;}
+.plan .pb h3{font-size:16px; margin:14px 0 6px;}
+.tbl{overflow-x:auto; margin:0 0 12px;}
+.tbl table{border-collapse:collapse; width:100%; min-width:420px; font-size:14px;}
+.tbl th,.tbl td{border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top;}
+.tbl th{background:var(--mock);}
+.pdfbtn{display:inline-block; border:1px solid var(--accent); color:var(--accent); border-radius:6px; padding:8px 12px; font-weight:700; text-decoration:none; font-size:14px;}
+.note{color:var(--muted); font-size:14px;}
+footer .bk{flex-basis:100%;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="tabs" aria-label="Views">
+    <button class="tab" id="tabTracker" type="button" aria-selected="true">Tracker</button>
+    <button class="tab" id="tabPlan" type="button" aria-selected="false">Plan and notes</button>
+  </nav>
+  <div id="viewTracker">
+  <header class="top">
+    <div>
+      <h1 id="headline">CAT 2026 tracker</h1>
+      <p class="sub" id="sub"></p>
+    </div>
+    <div class="pbox big" aria-label="Overall progress"><b id="ovPct">0</b><i>%</i></div>
+    <div class="stats" id="stats"></div>
+    <p class="carry" id="carry"></p>
+  </header>
+
+  <section class="cal" aria-label="Plan calendar">
+    <div class="cal-grid" id="calGrid"></div>
+    <p class="legend">
+      <span><i class="dot-m"></i>Mock day</span>
+      <span><i class="dot-l"></i>Light day</span>
+      <span>Fill shows the day's %. Orange base = tasks left open.</span>
+    </p>
+  </section>
+
+  <section aria-label="Week view">
+    <div class="weekbar">
+      <button class="nav" id="prev" type="button">Prev</button>
+      <div class="mid"><h2 id="weekTitle"></h2></div>
+      <button class="nav" id="next" type="button">Next</button>
+    </div>
+    <p class="sub" id="weekSub" style="margin:-4px 0 12px"></p>
+    <button class="jump" id="jump" type="button" hidden>Jump to today</button>
+    <div id="days"></div>
+  </section>
+
+  <section class="mocks" aria-label="Mock scores">
+    <h2>Mock percentile trend</h2>
+    <p class="sub">Ticks show you did the work. Mock scores show whether it is working.</p>
+    <div id="mockBody"></div>
+  </section>
+
+
+  </div>
+  <div id="viewPlan" class="plan" hidden>
+    <h1>The 50-day plan</h1>
+    <p class="sub intro">Prepared 5 Oct 2026. Day 1 is Mon 5 Oct, Day 50 is Mon 23 Nov, then 5 buffer days, and CAT on Sun 29 Nov.</p>
+    <p class="intro"><a class="pdfbtn" href="CAT_2026_50_Day_Plan_Tracker.pdf" download>Download the PDF (fillable tick boxes)</a></p>
+
+    <details open>
+      <summary>What is the mistake log?</summary>
+      <div class="pb">
+        <p>It is a running list of every question you got <b>wrong, skipped, or guessed right by luck</b>. You add to it for 30-45 minutes each night, and after every mock as part of the analysis. It turns mistakes into a to-do list, so you stop losing marks to the same error twice.</p>
+        <p><b>What to write for each question:</b></p>
+        <ul>
+          <li>Where it came from (paper or set, question number)</li>
+          <li>Section and topic</li>
+          <li>Error type: concept gap, calculation, ran out of time, bad question selection, or silly slip</li>
+          <li>The correct approach in one line</li>
+          <li>A redo date</li>
+        </ul>
+        <div class="tbl"><table>
+          <tr><th>Question</th><th>Section</th><th>Topic</th><th>Error type</th><th>Correct approach</th><th>Redo</th></tr>
+          <tr><td>Mock 3, QA Q14</td><td>QA</td><td>Percentages</td><td>Calculation</td><td>Convert to fractions first (1/8 = 12.5%) instead of long multiplication</td><td>Day 24, Day 31</td></tr>
+        </table></div>
+        <p><b>How to use it:</b> redo every entry after 3 days and again after 10. A topic that shows up in the log twice or more becomes your next priority. Keep it in a notebook or a spreadsheet. The tick in the tracker only means you did the update.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Dates and assumptions</summary>
+      <div class="pb">
+        <ul>
+          <li>Starting point: near-beginner in VARC, DILR and QA, with a B.Tech CS background, about 9 hours on a normal day. If you can do 10-12 hours, put the extra into DILR sets and RC practice rather than adding topics.</li>
+          <li>CAT 2026 is on Sunday, 29 November, in three slots (8:30 AM, 12:30 PM, 4:30 PM). Expected: 68 questions, 40 minutes per section, +3 correct, -1 wrong MCQ, no negative marking for TITA. The admit card is expected around 4-5 November.</li>
+          <li>Festivals: Dussehra 20 Oct, Karva Chauth 29 Oct, Dhanteras 6 Nov, Diwali 8 Nov, Bhai Dooj 11 Nov.</li>
+          <li>The plan has about 9 light days (4-5 hours, all three sections still touched).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>What the papers show</summary>
+      <div class="pb">
+        <p class="note">Approximate proportions based on the papers I know best (strongest from 2015 onwards). Treat them as patterns, not exact counts.</p>
+        <ul>
+          <li><b>2005-2014:</b> different format (two sections), so only the topic patterns are useful.</li>
+          <li><b>2015-2019:</b> about 100 questions, 3 sections of 60 minutes each, generally easier.</li>
+          <li><b>2020 onwards:</b> 120 minutes, 40 minutes per section with no switching, about 66-68 questions. More reading-heavy, TITA grew, and DILR became the section that decides ranks.</li>
+          <li><b>Recent split:</b> about 24 VARC, 22 DILR, 22 QA (204 marks). Confirm in the 2026 bulletin.</li>
+        </ul>
+        <h3>QA (about 22 questions)</h3>
+        <div class="tbl"><table>
+          <tr><th>Area</th><th>Share</th><th>Verdict</th></tr>
+          <tr><td>Arithmetic</td><td>~30%</td><td><b>Must-Do:</b> percentages, profit &amp; loss, TSD, time &amp; work, ratio/mixtures, SI/CI, averages</td></tr>
+          <tr><td>Algebra</td><td>~25-30%</td><td><b>Must-Do:</b> quadratics, inequalities/modulus, functions, logs, progressions, surds/indices</td></tr>
+          <tr><td>Geometry &amp; mensuration</td><td>~20%</td><td><b>Must-Do:</b> triangles, circles. <b>Should-Do:</b> coordinate, polygons, 3D</td></tr>
+          <tr><td>Number system</td><td>~10-12%</td><td><b>Must-Do:</b> remainders, factors, bases, HCF/LCM</td></tr>
+          <tr><td>Modern math</td><td>~10%</td><td><b>Should-Do:</b> PnC, basic probability, sets. <b>Skip:</b> Bayes-style probability, derangements</td></tr>
+        </table></div>
+        <p class="note">Skip advanced trigonometry, matrices and the binomial theorem. They are rare or absent.</p>
+        <h3>DILR (about 22 questions, 4-5 sets)</h3>
+        <ul>
+          <li><b>Must-Do:</b> arrangements (linear, circular, matrix), selection/grouping with conditions, tournaments/scheduling, tables and caselets.</li>
+          <li><b>Should-Do:</b> games/puzzles, networks/routes, Venn-based sets.</li>
+          <li><b>Skip as a first pick in the exam:</b> very calculation-heavy multi-graph sets.</li>
+        </ul>
+        <h3>VARC (about 24 questions)</h3>
+        <ul>
+          <li><b>Must-Do:</b> RCs (about 16-18 questions from 4 passages) and para jumbles (TITA). Skip the long jumbles in the exam.</li>
+          <li><b>Should-Do:</b> para summary and odd-one-out.</li>
+          <li><b>Skip:</b> grammar rules and vocabulary lists. They have not been tested in years.</li>
+        </ul>
+        <p><b>Best marks per hour for a beginner:</b> QA arithmetic + algebra + number system first, then daily RC practice. DILR has the highest variance. It needs volume (about 80 sets solved) and the habit of picking the right sets.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Mock strategy and score targets</summary>
+      <div class="pb">
+        <p><b>How many?</b> You cannot fit 50. This plan gives <b>16 full mocks plus 12-15 sectionals</b>, roughly 25 tests' worth of practice. A mock without analysis is wasted, so cut mocks before you cut analysis.</p>
+        <p><b>When:</b> a diagnostic on Day 7, then regularly from Day 21. Take mocks at your real slot time once you know it. Use past CAT slot papers (2021-2025) for some Phase 3 mocks.</p>
+        <h3>The 3-hour analysis</h3>
+        <ul>
+          <li>40 min on attempt quality: what you attempted, what you should have skipped, where the time went.</li>
+          <li>40 min on VARC: re-read each wrong RC and note why the right option wins.</li>
+          <li>50 min on DILR: re-solve every unsolved set untimed. This is where most learning happens.</li>
+          <li>40 min on QA: redo each wrong question and classify the error.</li>
+          <li>10 min to update the mistake log.</li>
+        </ul>
+        <h3>Score targets (rough guides)</h3>
+        <div class="tbl"><table>
+          <tr><th>By</th><th>Mock percentile</th><th>Raw marks (of 204)</th></tr>
+          <tr><td>Day 21</td><td>65-80</td><td>35-50</td></tr>
+          <tr><td>Day 32</td><td>85-92</td><td>60-75</td></tr>
+          <tr><td>Day 39</td><td>93-95</td><td>75-85</td></tr>
+          <tr><td>Day 45</td><td>96-97</td><td>85-95</td></tr>
+          <tr><td>Final 3 mocks</td><td>97-99</td><td>95-105</td></tr>
+        </table></div>
+        <p>For 99.5+, expect roughly 95-105 raw marks, depending on slot normalisation. A path to about 100: VARC 16-18 attempted at ~85% accuracy (~40 marks), DILR 11-12 attempted at ~80% (~27), QA 14-15 attempted at ~80% (~31).</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Videos: short or long?</summary>
+      <div class="pb">
+        <ul>
+          <li><b>Phase 1:</b> long videos for QA concepts, at 1.25-1.5x speed, one topic at a time. Do questions on that topic the same day. Keep videos under 40% of QA time.</li>
+          <li><b>After Phase 1:</b> short videos only to fix a specific doubt or learn a shortcut.</li>
+          <li><b>VARC and DILR:</b> no concept binges. One or two strategy sessions, then practise.</li>
+          <li><b>PYQs:</b> your main material. Topic-wise for QA after each concept, PYQ sets for DILR from Day 8, PYQ RCs daily from Day 1. Treat CAT 2017-2025 slot papers as full mocks later.</li>
+          <li><b>One source per section.</b> Do not hop between channels. Pick one paid mock series alongside the free past papers.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>Do's and don'ts</summary>
+      <div class="pb">
+        <h3>Do</h3>
+        <ul>
+          <li>Do RCs every day from Day 1, even when you feel behind.</li>
+          <li>Time everything from Day 10 onwards.</li>
+          <li>Practise skipping: leaving a bad question or set is a skill.</li>
+          <li>Keep the nightly mistake-log session, even on light days.</li>
+          <li>Protect sleep, especially in the last 10 days.</li>
+        </ul>
+        <h3>Don't</h3>
+        <ul>
+          <li>Do not read grammar or vocabulary books.</li>
+          <li>Do not start new topics after about Day 40.</li>
+          <li>Do not chase every shortcut trick.</li>
+          <li>Do not compare your mock percentile to others' in the first three weeks.</li>
+          <li>Do not take a mock and skip the analysis.</li>
+          <li>Do not change strategy in the last 3 days.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>Exam-day strategy</summary>
+      <div class="pb">
+        <ul>
+          <li><b>VARC (40 min):</b> skim all 4 passages for 1-2 minutes, then start with the easiest. About 8 minutes per RC, and the VA questions (PJ, PS, OOO) in about 10 minutes. Aim for 16-18 attempts and skip dense passages.</li>
+          <li><b>DILR (40 min):</b> spend the first 4-5 minutes scanning all sets and pick the 2 easiest. Solve them fully (about 15 minutes each), then try a third. If you are stuck for more than 5-6 minutes with no progress, switch. Aim for 10-12 questions.</li>
+          <li><b>QA (40 min):</b> first pass over all 22 questions in about 20 minutes, taking the easy and TITA ones. Second pass on the medium ones, and leave 4-5 hard ones. Aim for 14-16 attempts.</li>
+        </ul>
+        <p class="note">You cannot carry time across sections, so use each 40 minutes fully.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>If your mocks plateau</summary>
+      <div class="pb">
+        <ul>
+          <li><b>Stuck below ~85 percentile:</b> concept gaps. Go back to topic-wise PYQs.</li>
+          <li><b>High attempts, low accuracy:</b> you are rushing or guessing. Slow down and cut your weakest 20% of attempts.</li>
+          <li><b>Low attempts, high accuracy:</b> you are too cautious. Run timed sets with a hard 2-minute limit per question.</li>
+          <li><b>DILR is stuck:</b> usually set selection, not skill. Run the 5-sets-in-5-minutes drill daily.</li>
+          <li><b>VARC is stuck:</b> classify wrong RC answers as inference, tone or detail errors and drill that type.</li>
+          <li><b>No change after 3 mocks:</b> stop mocks for 2 days and do only error repair.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>Weekly checkpoints</summary>
+      <div class="pb">
+        <div class="tbl"><table>
+          <tr><th>Checkpoint</th><th>You should have</th><th>If behind</th></tr>
+          <tr><td>Day 7</td><td>Diagnostic done, arithmetic and number system basics covered</td><td>Drop Should-Do topics</td></tr>
+          <tr><td>Day 14</td><td>Algebra covered, ~40 DILR sets done, 40+ RCs done</td><td>Cut geometry depth, keep the basics</td></tr>
+          <tr><td>Day 21</td><td>Mock 3 at 65+ percentile, all QA topics seen once</td><td>Compress PYQ blocks, not mocks</td></tr>
+          <tr><td>Day 28</td><td>Mock 5 at 80+, mistake log shows repeating patterns</td><td>Fix repeat offenders before any new practice</td></tr>
+          <tr><td>Day 35</td><td>Mock 7 at 88+, DILR attempts 2-3 sets reliably</td><td>Do extra set-selection drills</td></tr>
+          <tr><td>Day 42</td><td>Mocks consistently 93+</td><td>Re-run the plateau diagnosis</td></tr>
+          <tr><td>Day 49</td><td>Last 3 mocks within 3 percentile points</td><td>Stop adding anything new</td></tr>
+        </table></div>
+        <p class="note">If you slip by a day or two, take it from Should-Do topics and light days. Do not take it from mock analysis.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>Is 99.5+ realistic?</summary>
+      <div class="pb">
+        <p>It is a <b>long shot</b>. This is my judgement, not a measured statistic. Starting from near zero in all three sections with about 45 effective study days, a <b>95-98 percentile</b> is the realistic zone if you follow the plan, 99+ is possible if QA and DILR click, and 99.5+ needs most things to go right. A CS background should help with QA and DILR, while VARC from scratch will be the slowest to move. The most common route to 99.5+ is QA at 95+, DILR at 90+, and steady RC accuracy.</p>
+      </div>
+    </details>
+  </div>
+
+  <footer>
+    <span id="saveNote">Saved in this browser.</span>
+    <button class="reset" id="export" type="button">Export progress</button>
+    <button class="reset" id="importBtn" type="button">Import progress</button>
+    <input id="importFile" type="file" accept="application/json,.json" hidden>
+    <button class="reset" id="reset" type="button">Reset all progress</button>
+    <span class="bk" id="backupNote"></span>
+  </footer>
+</div>
+
+<script>
+var DAYS = [{"d": 1, "date": "Mon 5 Oct", "week": 1, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "RC method + 2 untimed RCs, start daily reading"}, {"k": "D", "t": "Linear arrangements (3 sets)"}, {"k": "Q", "t": "Percentages, profit/loss, discount"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 2, "date": "Tue 6 Oct", "week": 1, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs, log why each wrong option is wrong"}, {"k": "D", "t": "Circular + multi-attribute arrangements"}, {"k": "Q", "t": "Ratio, proportion, averages, alligation"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 3, "date": "Wed 7 Oct", "week": 1, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 3 PJ"}, {"k": "D", "t": "Selection / grouping sets"}, {"k": "Q", "t": "TSD (trains, boats, races)"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 4, "date": "Thu 8 Oct", "week": 1, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs (20 min cap)"}, {"k": "D", "t": "Tables + caselets"}, {"k": "Q", "t": "Time & work, pipes"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 5, "date": "Fri 9 Oct", "week": 1, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 3 PJ"}, {"k": "D", "t": "Bar / line / pie DI sets"}, {"k": "Q", "t": "SI/CI, mixtures + 25 arithmetic PYQs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 6, "date": "Sat 10 Oct", "week": 1, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + PS intro"}, {"k": "D", "t": "2 LR + 1 DI (20 min each)"}, {"k": "Q", "t": "Number system I: divisibility, factors, remainders"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 7, "date": "Sun 11 Oct", "week": 1, "tag": "", "type": "m", "mock": 1, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 1 (diagnostic, ignore the score)"}, {"k": "A", "t": "3h analysis + mistake log update"}, {"k": "X", "t": "Catch up on weak topics"}]}, {"d": 8, "date": "Mon 12 Oct", "week": 2, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs, mixed genres"}, {"k": "D", "t": "Tournaments / scheduling"}, {"k": "Q", "t": "Number system II: HCF/LCM, bases, unit digits"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 9, "date": "Tue 13 Oct", "week": 2, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 5 OOO"}, {"k": "D", "t": "Games / puzzle PYQ sets"}, {"k": "Q", "t": "Algebra I: linear / quadratic"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 10, "date": "Wed 14 Oct", "week": 2, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 5 PJ"}, {"k": "D", "t": "Networks / routes, binary logic"}, {"k": "Q", "t": "Algebra II: inequalities, modulus"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 11, "date": "Thu 15 Oct", "week": 2, "tag": "", "type": "l", "hrs": "4-5", "tasks": [{"k": "V", "t": "1 RC + reading"}, {"k": "D", "t": "Redo 1 set from Mock 1"}, {"k": "Q", "t": "Redo 20 mistake-log Qs"}]}, {"d": 12, "date": "Fri 16 Oct", "week": 2, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs timed"}, {"k": "D", "t": "Multi-graph / calculation-heavy DI"}, {"k": "Q", "t": "Algebra III: functions, logs, surds, indices"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 13, "date": "Sat 17 Oct", "week": 2, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 5 PJ + 5 PS, VARC sectional #1"}, {"k": "D", "t": "3 PYQ sets, timed"}, {"k": "Q", "t": "Algebra IV: progressions + 25 algebra PYQs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 14, "date": "Sun 18 Oct", "week": 2, "tag": "", "type": "m", "mock": 2, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 2"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 15, "date": "Mon 19 Oct", "week": 3, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "2 RCs + 10 PS/OOO"}, {"k": "D", "t": "PYQ sets (2019-20)"}, {"k": "Q", "t": "Geometry I: triangles, similarity, centres"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 16, "date": "Tue 20 Oct", "week": 3, "tag": "Dussehra", "type": "l", "hrs": "4-5", "tasks": [{"k": "V", "t": "2 RCs"}, {"k": "D", "t": "1 set"}, {"k": "Q", "t": "Geometry formula sheet + 10 Qs"}]}, {"d": 17, "date": "Wed 21 Oct", "week": 3, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs"}, {"k": "D", "t": "3 PYQ sets"}, {"k": "Q", "t": "Geometry II: circles, polygons"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 18, "date": "Thu 22 Oct", "week": 3, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 5 PJ"}, {"k": "D", "t": "3 sets in weakest type"}, {"k": "Q", "t": "Coordinate geometry + mensuration"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 19, "date": "Fri 23 Oct", "week": 3, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs (philosophy / science)"}, {"k": "D", "t": "DILR sectional #1 + analysis"}, {"k": "Q", "t": "PnC I: counting, arrangements, selections"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 20, "date": "Sat 24 Oct", "week": 3, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 5 PS"}, {"k": "D", "t": "2 PYQ sets"}, {"k": "Q", "t": "PnC II, probability, sets; QA sectional #1"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 21, "date": "Sun 25 Oct", "week": 3, "tag": "", "type": "m", "mock": 3, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 3"}, {"k": "A", "t": "3h analysis + mistake log update"}], "target": {"pct": "65-80", "raw": "35-50"}}, {"d": 22, "date": "Mon 26 Oct", "week": 4, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "RC speed: 4 RCs in 32 min"}, {"k": "D", "t": "3 PYQ sets (20 min each)"}, {"k": "Q", "t": "30 arithmetic PYQs + fix Mock 3 gaps"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 23, "date": "Tue 27 Oct", "week": 4, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 5 PJ timed"}, {"k": "D", "t": "3 LR-heavy sets"}, {"k": "Q", "t": "30 algebra PYQs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 24, "date": "Wed 28 Oct", "week": 4, "tag": "", "type": "m", "mock": 4, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 4"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 25, "date": "Thu 29 Oct", "week": 4, "tag": "Karva Chauth", "type": "l", "hrs": "4-5", "tasks": [{"k": "V", "t": "2 RCs"}, {"k": "D", "t": "Redo 1 set from Mock 4"}, {"k": "Q", "t": "20 mistake-log Qs"}]}, {"d": 26, "date": "Fri 30 Oct", "week": 4, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "RCs + 10 PS"}, {"k": "D", "t": "3 sets, weakest type"}, {"k": "Q", "t": "30 geometry / mensuration PYQs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 27, "date": "Sat 31 Oct", "week": 4, "tag": "", "type": "m", "mock": 5, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 5"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 28, "date": "Sun 1 Nov", "week": 4, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "2 RCs + 10 PJ/OOO"}, {"k": "D", "t": "DILR sectional #2"}, {"k": "Q", "t": "QA sectional #2 + 30 number system / PnC PYQs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 29, "date": "Mon 2 Nov", "week": 5, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "RC speed: 4 RCs in 30 min"}, {"k": "D", "t": "3 PYQ sets (2022-23)"}, {"k": "Q", "t": "30 mixed timed PYQs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 30, "date": "Tue 3 Nov", "week": 5, "tag": "", "type": "m", "mock": 6, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 6"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 31, "date": "Wed 4 Nov", "week": 5, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + PS/OOO"}, {"k": "D", "t": "Weakest-type drill (3 sets)"}, {"k": "Q", "t": "Weak topics from mistake log"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 32, "date": "Thu 5 Nov", "week": 5, "tag": "", "type": "m", "mock": 7, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 7 (at your real slot time if the admit card is out)"}, {"k": "A", "t": "3h analysis + mistake log update"}], "target": {"pct": "85-92", "raw": "60-75"}}, {"d": 33, "date": "Fri 6 Nov", "week": 5, "tag": "Dhanteras", "type": "l", "hrs": "4-5", "tasks": [{"k": "V", "t": "2 RCs"}, {"k": "D", "t": "1 set"}, {"k": "Q", "t": "15 mistake-log Qs"}]}, {"d": 34, "date": "Sat 7 Nov", "week": 5, "tag": "", "type": "n", "hrs": "7", "tasks": [{"k": "V", "t": "3 RCs"}, {"k": "D", "t": "2 sets"}, {"k": "Q", "t": "30 mixed QA, timed"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 35, "date": "Sun 8 Nov", "week": 5, "tag": "Diwali", "type": "l", "hrs": "2-3", "tasks": [{"k": "V", "t": "1 RC"}, {"k": "L", "t": "Read your mistake log (30 min). Rest for real."}]}, {"d": 36, "date": "Mon 9 Nov", "week": 6, "tag": "", "type": "m", "mock": 8, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 8"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 37, "date": "Tue 10 Nov", "week": 6, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + PS/OOO"}, {"k": "D", "t": "3 sets"}, {"k": "Q", "t": "30 PYQs on weak topics"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 38, "date": "Wed 11 Nov", "week": 6, "tag": "Bhai Dooj", "type": "l", "hrs": "4-5", "tasks": [{"k": "V", "t": "2 RCs"}, {"k": "D", "t": "1 set"}, {"k": "Q", "t": "15 mistake-log Qs"}]}, {"d": 39, "date": "Thu 12 Nov", "week": 6, "tag": "", "type": "m", "mock": 9, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 9"}, {"k": "A", "t": "3h analysis + mistake log update"}], "target": {"pct": "93-95", "raw": "75-85"}}, {"d": 40, "date": "Fri 13 Nov", "week": 6, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "RC + 10 PJ"}, {"k": "D", "t": "Re-solve every failed set"}, {"k": "Q", "t": "Re-solve repeat-offender QA topics, 1-page formula sheet"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 41, "date": "Sat 14 Nov", "week": 6, "tag": "", "type": "m", "mock": 10, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 10 (a past CAT paper)"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 42, "date": "Sun 15 Nov", "week": 6, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "VARC sectional + analysis"}, {"k": "D", "t": "DILR sectional + analysis"}, {"k": "Q", "t": "Repair top-5 weak QA topics"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 43, "date": "Mon 16 Nov", "week": 7, "tag": "", "type": "m", "mock": 11, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 11"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 44, "date": "Tue 17 Nov", "week": 7, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "3 RCs + 10 PJ/OOO"}, {"k": "D", "t": "Set-selection drill: scan 5 sets in 5 min, solve the best 2"}, {"k": "Q", "t": "QA sectional"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 45, "date": "Wed 18 Nov", "week": 7, "tag": "", "type": "m", "mock": 12, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 12"}, {"k": "A", "t": "3h analysis + mistake log update"}], "target": {"pct": "96-97", "raw": "85-95"}}, {"d": 46, "date": "Thu 19 Nov", "week": 7, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "VARC sectional"}, {"k": "D", "t": "DILR sectional"}, {"k": "Q", "t": "QA speed drill (30 TITA-style Qs)"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 47, "date": "Fri 20 Nov", "week": 7, "tag": "", "type": "m", "mock": 13, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 13"}, {"k": "A", "t": "3h analysis + mistake log update"}]}, {"d": 48, "date": "Sat 21 Nov", "week": 7, "tag": "", "type": "n", "hrs": "9", "tasks": [{"k": "V", "t": "RC speed + weak question types"}, {"k": "D", "t": "3 PYQ sets"}, {"k": "Q", "t": "Redo QA mistake log"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 49, "date": "Sun 22 Nov", "week": 7, "tag": "", "type": "m", "mock": 14, "hrs": "8", "tasks": [{"k": "M", "t": "Mock 14"}, {"k": "A", "t": "3h analysis + mistake log update"}], "target": {"pct": "97-99", "raw": "95-105"}}, {"d": 50, "date": "Mon 23 Nov", "week": 8, "tag": "", "type": "n", "hrs": "7", "tasks": [{"k": "V", "t": "Review top-40 mistakes"}, {"k": "D", "t": "2 DILR sets"}, {"k": "Q", "t": "25 mixed QA + formula sheet"}]}, {"d": 51, "date": "Tue 24 Nov", "week": 8, "tag": "", "type": "m", "mock": 15, "hrs": "6-7", "tasks": [{"k": "M", "t": "Mock 15 (at your real slot time)"}, {"k": "A", "t": "2h analysis + mistake log update"}], "target": {"pct": "97-99", "raw": "95-105"}}, {"d": 52, "date": "Wed 25 Nov", "week": 8, "tag": "", "type": "n", "hrs": "6", "tasks": [{"k": "V", "t": "2 RCs + 5 PJ"}, {"k": "D", "t": "2 sets"}, {"k": "Q", "t": "20 weak-topic Qs"}, {"k": "L", "t": "Mistake log update (30-45 min)"}]}, {"d": 53, "date": "Thu 26 Nov", "week": 8, "tag": "", "type": "m", "mock": 16, "hrs": "6", "tasks": [{"k": "M", "t": "Mock 16 (no new topics today)"}, {"k": "A", "t": "1.5-2h analysis + mistake log update"}], "target": {"pct": "97-99", "raw": "95-105"}}, {"d": 54, "date": "Fri 27 Nov", "week": 8, "tag": "", "type": "l", "hrs": "4", "tasks": [{"k": "V", "t": "2 RCs"}, {"k": "D", "t": "1 set"}, {"k": "Q", "t": "15 easy QA + formula sheet"}]}, {"d": 55, "date": "Sat 28 Nov", "week": 8, "tag": "", "type": "l", "hrs": "0-1", "tasks": [{"k": "X", "t": "Check admit card, ID and the route to the centre"}, {"k": "X", "t": "Sleep early"}]}, {"d": 56, "date": "Sun 29 Nov", "week": 8, "tag": "", "type": "e", "hrs": "-", "tasks": []}];
+var START = new Date(2026, 9, 5);
+var EXAM = new Date(2026, 10, 29);
+var KEY = "cat2026-tracker-v1";
+var KIND = {V:"VARC", D:"DILR", Q:"QA", M:"Mock", A:"Review", L:"Log", X:"Prep"};
+var state = {t:{}, m:{}, u:0};
+var docRef = null, chain = Promise.resolve(), saveTimer = null, resetTimer = null;
+
+/* ---------- date helpers ---------- */
+var now = new Date();
+var today0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+var todayIdx = Math.round((today0 - START) / 864e5) + 1;      // 1 = Mon 5 Oct
+var daysLeft = Math.round((EXAM - today0) / 864e5);
+var selWeek = todayIdx >= 1 && todayIdx <= 56 ? Math.floor((todayIdx - 1) / 7) + 1 : (todayIdx > 56 ? 8 : 1);
+
+/* ---------- state helpers ---------- */
+function bits(d){
+  var n = DAYS[d-1].tasks.length, s = state.t[d] || "";
+  while (s.length < n) s += "0";
+  return s.slice(0, n);
+}
+function dayDone(d){ var s = bits(d), c = 0; for (var i = 0; i < s.length; i++) if (s[i] === "1") c++; return c; }
+function dayTotal(d){ return DAYS[d-1].tasks.length; }
+function dayFrac(d){ var n = dayTotal(d); return n ? dayDone(d) / n : 0; }
+function dayPct(d){ return Math.round(dayFrac(d) * 100); }
+function isFull(d){ return dayTotal(d) > 0 && dayDone(d) === dayTotal(d); }
+function weekDays(w){ return DAYS.filter(function(x){ return x.week === w; }); }
+function sumRange(list){
+  var a = 0, b = 0;
+  list.forEach(function(x){ a += dayDone(x.d); b += dayTotal(x.d); });
+  return {done:a, total:b, pct: b ? Math.round(a / b * 100) : 0};
+}
+function streak(){
+  var i = Math.min(todayIdx, 55), n = 0;
+  if (i < 1) return 0;
+  if (isFull(i)) n++;
+  for (var d = i - 1; d >= 1; d--){ if (isFull(d)) n++; else break; }
+  return n;
+}
+function el(tag, attrs, kids){
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs){
+    if (k === "text") e.textContent = attrs[k];
+    else if (k === "class") e.className = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  (kids || []).forEach(function(c){ if (c) e.appendChild(c); });
+  return e;
+}
+
+/* ---------- persistence ---------- */
+function persistLocal(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function loadLocal(){
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw){ var s = JSON.parse(raw); if (s && s.t) state = {t:s.t || {}, m:s.m || {}, u:s.u || 0}; }
+  } catch (e) {}
+}
+function queueRemote(){
+  if (!docRef) return;
+  chain = chain.then(function(){
+    return docRef.set({t:state.t, m:state.m, u:state.u, v:1}).then(function(){
+      document.getElementById("saveNote").textContent = "Saved to your account and this browser.";
+    });
+  }).catch(function(){
+    document.getElementById("saveNote").textContent = "Saved in this browser. Account sync is unavailable right now.";
+  });
+}
+function scheduleSave(){
+  state.u = Date.now();
+  persistLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(queueRemote, 700);
+}
+async function initRemote(){
+  try {
+    if (!(window.claude && window.claude.use)) return;
+    var db = await window.claude.use("db");
+    var user = await window.claude.use("user");
+    if (!db || !user) return;
+    var id = await user.id();
+    if (!id) return;
+    docRef = db.doc("data/users/" + id + "/tracker");
+    var snap = await docRef.get();
+    var has = Object.keys(state.t).length || Object.keys(state.m).length;
+    if (snap.exists){
+      var r = snap.data() || {};
+      if ((r.u || 0) >= (state.u || 0)){
+        state = {t:r.t || {}, m:r.m || {}, u:r.u || 0};
+        persistLocal();
+        renderWeek(); paintAll();
+      } else { queueRemote(); }
+      document.getElementById("saveNote").textContent = "Saved to your account and this browser.";
+    } else if (has){ queueRemote(); }
+    else { document.getElementById("saveNote").textContent = "Saved to your account and this browser."; }
+  } catch (e) { docRef = null; }
+}
+
+/* ---------- build calendar once ---------- */
+function buildCal(){
+  var g = document.getElementById("calGrid");
+  g.appendChild(el("span"));
+  ["M","T","W","T","F","S","S"].forEach(function(c){ g.appendChild(el("span", {"class":"dow", text:c})); });
+  g.appendChild(el("span"));
+  for (var w = 1; w <= 8; w++){
+    g.appendChild(el("button", {"class":"wk", type:"button", "data-w":w, text:"W" + w}));
+    weekDays(w).forEach(function(x){
+      var cls = "cell" + (x.type === "m" ? " mock" : "") + (x.type === "l" ? " light" : "") + (x.type === "e" ? " exam" : "");
+      g.appendChild(el("button", {"class":cls, type:"button", "data-d":x.d}, [el("span", {text:x.d})]));
+    });
+    g.appendChild(el("span", {"class":"wkpct", "data-wp":w, text:"0%"}));
+  }
+}
+
+/* ---------- render a week ---------- */
+function renderWeek(){
+  var box = document.getElementById("days");
+  box.textContent = "";
+  var list = weekDays(selWeek);
+  list.forEach(function(x){
+    var cls = "day" + (x.type === "m" ? " mock" : "") + (x.type === "l" ? " light" : "") + (x.d === todayIdx ? " today" : "");
+    var tags = el("div", {"class":"tags"});
+    if (x.d === todayIdx) tags.appendChild(el("span", {"class":"tag now", text:"Today"}));
+    if (x.type === "m") tags.appendChild(el("span", {"class":"tag mk", text:"Mock day"}));
+    if (x.type === "l" && x.d !== 55) tags.appendChild(el("span", {"class":"tag lt", text:"Light day"}));
+    if (x.d === 55) tags.appendChild(el("span", {"class":"tag lt", text:"Rest day"}));
+    if (x.tag) tags.appendChild(el("span", {"class":"tag", text:x.tag}));
+    var when = el("div", {"class":"when"}, [
+      el("strong", {text:"Day " + x.d}),
+      el("span", {text:x.date}),
+      x.hrs && x.hrs !== "-" ? el("span", {text:"about " + x.hrs + " h"}) : null
+    ]);
+    var head = el("div", {"class":"day-h"}, [when, x.type === "e" ? null : el("div", {"class":"pbox"}, [el("b", {"data-pc":x.d, text:"0"}), el("i", {text:"%"})]), tags]);
+    var art = el("article", {"class":cls, id:"day-" + x.d, "data-d":x.d}, [head]);
+    if (x.type === "e"){
+      art.appendChild(el("p", {"class":"exam-note", text:"CAT 2026. Nothing to tick today. Take the paper the way you practised it."}));
+    } else {
+      art.appendChild(el("div", {"class":"bar"}, [el("i", {"data-bar":x.d})]));
+      var ul = el("ul", {"class":"tasks"});
+      x.tasks.forEach(function(t, i){
+        var b = el("button", {"class":"task", type:"button", role:"checkbox", "aria-checked":"false", "data-d":x.d, "data-i":i}, [
+          el("span", {"class":"box"}), el("span", {"class":"who", text:KIND[t.k] || "Task"}), el("span", {"class":"what", text:t.t})
+        ]);
+        ul.appendChild(el("li", null, [b]));
+      });
+      art.appendChild(ul);
+      if (x.type === "m"){
+        var m = state.m[x.d] || {};
+        var rin = el("input", {type:"number", inputmode:"decimal", min:"0", max:"204", step:"0.01", "data-m":x.d, "data-f":"r", "aria-label":"Raw marks, Mock " + x.mock});
+        var pin = el("input", {type:"number", inputmode:"decimal", min:"0", max:"100", step:"0.01", "data-m":x.d, "data-f":"p", "aria-label":"Percentile, Mock " + x.mock});
+        if (m.r !== undefined && m.r !== "") rin.value = m.r;
+        if (m.p !== undefined && m.p !== "") pin.value = m.p;
+        var row = el("div", {"class":"mockin"}, [
+          el("label", {text:"Raw marks (of 204)"}, [rin]),
+          el("label", {text:"Percentile"}, [pin])
+        ]);
+        if (x.target) row.appendChild(el("small", {text:"Target: percentile " + x.target.pct + ", raw marks " + x.target.raw}));
+        art.appendChild(row);
+      }
+    }
+    box.appendChild(art);
+  });
+  var first = list[0], last = list[list.length - 1];
+  document.getElementById("weekTitle").textContent = "Week " + selWeek;
+  document.getElementById("weekSub").textContent = first.date + " to " + last.date;
+  document.getElementById("prev").disabled = selWeek <= 1;
+  document.getElementById("next").disabled = selWeek >= 8;
+  var inRange = todayIdx >= 1 && todayIdx <= 56;
+  var jb = document.getElementById("jump");
+  jb.hidden = !(inRange && Math.floor((todayIdx - 1) / 7) + 1 !== selWeek);
+}
+
+/* ---------- paint ---------- */
+function paintDay(d){
+  var x = DAYS[d-1];
+  if (x.type === "e") return;
+  var s = bits(d), pc = dayPct(d);
+  var art = document.getElementById("day-" + d);
+  if (!art) return;
+  var pcEl = art.querySelector("[data-pc]"); if (pcEl) pcEl.textContent = pc;
+  var bar = art.querySelector("[data-bar]"); if (bar) bar.style.width = pc + "%";
+  art.classList.toggle("full", isFull(d));
+  var btns = art.querySelectorAll(".task");
+  for (var i = 0; i < btns.length; i++) btns[i].setAttribute("aria-checked", s[i] === "1" ? "true" : "false");
+}
+function paintCal(){
+  var cells = document.querySelectorAll("#calGrid .cell");
+  for (var i = 0; i < cells.length; i++){
+    var c = cells[i], d = +c.getAttribute("data-d"), x = DAYS[d-1];
+    if (x.type === "e"){ c.classList.toggle("today", d === todayIdx); c.setAttribute("aria-label", "Day 56, exam day"); continue; }
+    var f = dayFrac(d);
+    c.style.setProperty("--p", f);
+    c.classList.toggle("full", f === 1);
+    c.classList.toggle("today", d === todayIdx);
+    c.classList.toggle("open", d < todayIdx && f < 1);
+    c.classList.toggle("future", d > todayIdx);
+    c.setAttribute("aria-label", "Day " + d + ", " + x.date + ", " + Math.round(f * 100) + " percent done");
+  }
+  for (var w = 1; w <= 8; w++){
+    var s = sumRange(weekDays(w));
+    var p = document.querySelector('[data-wp="' + w + '"]'); if (p) p.textContent = s.pct + "%";
+    var wb = document.querySelector('.wk[data-w="' + w + '"]'); if (wb) wb.classList.toggle("sel", w === selWeek);
+  }
+}
+function paintHead(){
+  var all = sumRange(DAYS.filter(function(x){ return x.type !== "e"; }));
+  document.getElementById("ovPct").textContent = all.pct;
+  var h = document.getElementById("headline"), sub = document.getElementById("sub");
+  if (todayIdx < 1){
+    h.textContent = "Starts Mon 5 Oct";
+    var gap = -todayIdx + 1; sub.textContent = gap + (gap === 1 ? " day" : " days") + " until Day 1. CAT is on Sun 29 Nov.";
+  } else if (todayIdx <= 55){
+    h.textContent = "Day " + todayIdx + " of 56";
+    sub.textContent = daysLeft + " days to CAT on Sun 29 Nov 2026.";
+  } else if (todayIdx === 56){
+    h.textContent = "CAT day"; sub.textContent = "Sun 29 Nov 2026. Good luck.";
+  } else {
+    h.textContent = "CAT 2026 is done"; sub.textContent = "Your ticks stay here as a record.";
+  }
+  var st = document.getElementById("stats");
+  st.textContent = "";
+  var tdPct = todayIdx >= 1 && todayIdx <= 55 ? dayPct(todayIdx) : null;
+  var full = DAYS.filter(function(x){ return x.type !== "e" && isFull(x.d); }).length;
+  function stat(label, val){ st.appendChild(el("span", null, [document.createTextNode(label + " "), el("strong", {text:val})])); }
+  stat("Tasks ticked", all.done + " of " + all.total);
+  if (tdPct !== null) stat("Today", tdPct + "%");
+  stat("Days at 100%", String(full));
+  stat("Current streak", streak() + (streak() === 1 ? " day" : " days"));
+  var carry = document.getElementById("carry");
+  carry.className = "carry";
+  if (todayIdx > 1){
+    var prior = DAYS.filter(function(x){ return x.d < Math.min(todayIdx, 56) && x.type !== "e"; });
+    var open = 0; prior.forEach(function(x){ open += dayTotal(x.d) - dayDone(x.d); });
+    if (open > 0){ carry.textContent = open + " task" + (open === 1 ? "" : "s") + " left open from earlier days. Pick them up before adding new ones."; carry.className = "carry warn"; }
+    else { carry.textContent = "Nothing left open from earlier days."; }
+  } else { carry.textContent = ""; }
+}
+function paintMocks(){
+  var body = document.getElementById("mockBody");
+  body.textContent = "";
+  var pts = [];
+  DAYS.forEach(function(x){
+    if (x.type !== "m") return;
+    var m = state.m[x.d] || {};
+    var p = parseFloat(m.p), r = parseFloat(m.r);
+    if (!isNaN(p)) pts.push({n:x.mock, p:p, r:isNaN(r) ? null : r, d:x.d});
+  });
+  if (!pts.length){
+    body.appendChild(el("p", {"class":"empty", text:"Enter your percentile on each mock day to see the trend here."}));
+    return;
+  }
+  var W = 320, H = 120, L = 28, R = 10, T = 8, B = 20;
+  var ns = "http://www.w3.org/2000/svg";
+  function sx(n){ return L + (n - 1) * (W - L - R) / 15; }
+  function sy(p){ return T + (100 - p) * (H - T - B) / 100; }
+  var svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H); svg.setAttribute("class", "spark"); svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Mock percentile trend");
+  [50, 90, 99].forEach(function(g){
+    var ln = document.createElementNS(ns, "line");
+    ln.setAttribute("x1", L); ln.setAttribute("x2", W - R); ln.setAttribute("y1", sy(g)); ln.setAttribute("y2", sy(g));
+    ln.setAttribute("stroke", "currentColor"); ln.setAttribute("stroke-opacity", "0.2"); ln.setAttribute("stroke-dasharray", "3 3");
+    svg.appendChild(ln);
+    var tx = document.createElementNS(ns, "text"); tx.setAttribute("x", 2); tx.setAttribute("y", sy(g) + 3); tx.textContent = g;
+    svg.appendChild(tx);
+  });
+  [1, 8, 16].forEach(function(n){
+    var tx = document.createElementNS(ns, "text"); tx.setAttribute("x", sx(n)); tx.setAttribute("y", H - 5); tx.setAttribute("text-anchor", "middle"); tx.textContent = "M" + n;
+    svg.appendChild(tx);
+  });
+  if (pts.length > 1){
+    var pl = document.createElementNS(ns, "polyline");
+    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", "var(--accent)"); pl.setAttribute("stroke-width", "2");
+    pl.setAttribute("points", pts.map(function(q){ return sx(q.n) + "," + sy(q.p); }).join(" "));
+    svg.appendChild(pl);
+  }
+  pts.forEach(function(q){
+    var c = document.createElementNS(ns, "circle");
+    c.setAttribute("cx", sx(q.n)); c.setAttribute("cy", sy(q.p)); c.setAttribute("r", 3.5); c.setAttribute("fill", "var(--accent)");
+    var t = document.createElementNS(ns, "title"); t.textContent = "Mock " + q.n + ": " + q.p + " percentile" + (q.r !== null ? ", " + q.r + " raw" : "");
+    c.appendChild(t); svg.appendChild(c);
+  });
+  body.appendChild(svg);
+  var last = pts[pts.length - 1], best = pts.reduce(function(a, b){ return b.p > a.p ? b : a; }, pts[0]);
+  body.appendChild(el("p", {"class":"sub", text:"Latest: Mock " + last.n + ", " + last.p + " percentile" + (last.r !== null ? ", " + last.r + " raw" : "") + ". Best so far: Mock " + best.n + ", " + best.p + "."}));
+}
+function paintAll(){
+  weekDays(selWeek).forEach(function(x){ paintDay(x.d); });
+  paintCal(); paintHead(); paintMocks();
+}
+
+/* ---------- events ---------- */
+document.getElementById("days").addEventListener("click", function(e){
+  var b = e.target.closest ? e.target.closest(".task") : null;
+  if (!b) return;
+  var d = +b.getAttribute("data-d"), i = +b.getAttribute("data-i");
+  var s = bits(d).split("");
+  s[i] = s[i] === "1" ? "0" : "1";
+  state.t[d] = s.join("");
+  paintDay(d); paintCal(); paintHead();
+  scheduleSave();
+});
+document.getElementById("days").addEventListener("input", function(e){
+  var t = e.target;
+  if (!t.getAttribute || !t.getAttribute("data-m")) return;
+  var d = t.getAttribute("data-m"), f = t.getAttribute("data-f");
+  state.m[d] = state.m[d] || {};
+  state.m[d][f] = t.value;
+  paintMocks();
+  scheduleSave();
+});
+document.getElementById("calGrid").addEventListener("click", function(e){
+  var c = e.target.closest ? e.target.closest("button") : null;
+  if (!c) return;
+  var w = c.getAttribute("data-w"), d = c.getAttribute("data-d");
+  if (w){ selWeek = +w; renderWeek(); paintAll(); return; }
+  if (d){
+    selWeek = DAYS[d-1].week; renderWeek(); paintAll();
+    var a = document.getElementById("day-" + d);
+    if (a) a.scrollIntoView({behavior:"auto", block:"start"});
+  }
+});
+document.getElementById("prev").addEventListener("click", function(){ if (selWeek > 1){ selWeek--; renderWeek(); paintAll(); } });
+document.getElementById("next").addEventListener("click", function(){ if (selWeek < 8){ selWeek++; renderWeek(); paintAll(); } });
+document.getElementById("jump").addEventListener("click", function(){
+  if (todayIdx < 1 || todayIdx > 56) return;
+  selWeek = Math.floor((todayIdx - 1) / 7) + 1; renderWeek(); paintAll();
+  var a = document.getElementById("day-" + todayIdx); if (a) a.scrollIntoView({behavior:"auto", block:"start"});
+});
+document.getElementById("reset").addEventListener("click", function(){
+  var b = this;
+  if (!b.classList.contains("arm")){
+    b.classList.add("arm"); b.textContent = "Tap again to erase everything";
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(function(){ b.classList.remove("arm"); b.textContent = "Reset all progress"; }, 4000);
+    return;
+  }
+  clearTimeout(resetTimer);
+  b.classList.remove("arm"); b.textContent = "Reset all progress";
+  state = {t:{}, m:{}, u:Date.now()};
+  persistLocal(); queueRemote();
+  renderWeek(); paintAll();
+});
+
+
+/* ---------- views ---------- */
+function showView(v){
+  var plan = v === "plan";
+  document.getElementById("viewTracker").hidden = plan;
+  document.getElementById("viewPlan").hidden = !plan;
+  document.getElementById("tabTracker").setAttribute("aria-selected", plan ? "false" : "true");
+  document.getElementById("tabPlan").setAttribute("aria-selected", plan ? "true" : "false");
+  window.scrollTo(0, 0);
+  try { history.replaceState(null, "", plan ? "#plan" : "#tracker"); } catch (e) {}
+}
+document.getElementById("tabTracker").addEventListener("click", function(){ showView("tracker"); });
+document.getElementById("tabPlan").addEventListener("click", function(){ showView("plan"); });
+
+/* ---------- backup: export / import ---------- */
+var BK = "cat2026-last-backup";
+function backupNote(){
+  var t = null;
+  try { t = localStorage.getItem(BK); } catch (e) {}
+  document.getElementById("backupNote").textContent = t
+    ? "Last backup: " + new Date(+t).toLocaleString() + ". Export again after big updates."
+    : "No backup yet. Progress lives in this browser only, so export a copy now and then.";
+}
+document.getElementById("export").addEventListener("click", function(){
+  var data = {app:"cat2026-tracker", version:1, exported:new Date().toISOString(), t:state.t, m:state.m};
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = "cat2026-progress.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  try { localStorage.setItem(BK, String(Date.now())); } catch (e) {}
+  backupNote();
+});
+document.getElementById("importBtn").addEventListener("click", function(){ document.getElementById("importFile").click(); });
+document.getElementById("importFile").addEventListener("change", function(){
+  var f = this.files && this.files[0], inp = this;
+  if (!f) return;
+  var rd = new FileReader();
+  rd.onload = function(){
+    var note = document.getElementById("backupNote");
+    try {
+      var o = JSON.parse(rd.result);
+      if (!o || o.app !== "cat2026-tracker" || typeof o.t !== "object" || typeof o.m !== "object") throw new Error("bad file");
+      var t = {}, m = {};
+      Object.keys(o.t).forEach(function(k){
+        var d = +k;
+        if (d >= 1 && d <= 56 && /^[01]{1,10}$/.test(String(o.t[k]))) t[d] = String(o.t[k]);
+      });
+      Object.keys(o.m).forEach(function(k){
+        var d = +k, v = o.m[k] || {};
+        if (d >= 1 && d <= 56) m[d] = {r:String(v.r === undefined ? "" : v.r).slice(0, 8), p:String(v.p === undefined ? "" : v.p).slice(0, 8)};
+      });
+      state = {t:t, m:m, u:Date.now()};
+      persistLocal();
+      renderWeek(); paintAll();
+      note.textContent = "Imported progress from " + f.name + ".";
+    } catch (e) {
+      note.textContent = "That file is not a CAT tracker backup. Nothing was changed.";
+    }
+    inp.value = "";
+  };
+  rd.readAsText(f);
+});
+
+/* ---------- start ---------- */
+loadLocal();
+buildCal();
+renderWeek();
+paintAll();
+initRemote();
+backupNote();
+if (window.location.hash === "#plan") showView("plan");
+</script>
+</body>
+</html>
